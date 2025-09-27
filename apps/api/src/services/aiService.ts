@@ -68,10 +68,12 @@ export async function generateSummary(transcript: string): Promise<string> {
 
 export async function extractActionItems(transcript: string): Promise<any[]> {
   const prompt = `Extract action items from the following meeting transcript.
+  Look for tasks, decisions, next steps, and things people committed to do.
   Return them as a JSON array with the following structure:
   [{ "id": "1", "text": "action item description", "assignee": "person name if mentioned", "priority": "high/medium/low" }]
 
-  Only return the JSON array, no additional text.
+  If no clear action items are found, return an empty array [].
+  Only return the JSON array, no additional text or explanation.
 
   Transcript:
   ${transcript}`;
@@ -86,7 +88,7 @@ export async function extractActionItems(transcript: string): Promise<any[]> {
           {
             role: 'system',
             content:
-              'You are a helpful assistant that extracts action items from meeting transcripts. Always return valid JSON.',
+              'You are a helpful assistant that extracts action items from meeting transcripts. Always return valid JSON array only, with no additional text.',
           },
           { role: 'user', content: prompt },
         ],
@@ -95,9 +97,14 @@ export async function extractActionItems(transcript: string): Promise<any[]> {
       });
 
       const content = response.choices[0].message.content || '[]';
+      logger.info(`OpenAI action items response: ${content.substring(0, 200)}...`);
       try {
-        return JSON.parse(content);
-      } catch {
+        const items = JSON.parse(content);
+        logger.info(`Parsed ${items.length} action items from OpenAI`);
+        return items;
+      } catch (e) {
+        logger.error('Failed to parse OpenAI action items JSON:', e);
+        logger.error('Raw content:', content);
         return [];
       }
     } catch (error) {
@@ -114,22 +121,67 @@ export async function extractActionItems(transcript: string): Promise<any[]> {
       const response = await result.response;
       const text = response.text();
 
-      // Extract JSON from response
+      logger.info(`Gemini action items response: ${text.substring(0, 200)}...`);
+
+      // Extract JSON from response (Gemini might add markdown or text around it)
       const jsonMatch = text.match(/\[.*\]/s);
       if (jsonMatch) {
         try {
-          return JSON.parse(jsonMatch[0]);
-        } catch {
+          const items = JSON.parse(jsonMatch[0]);
+          logger.info(`Parsed ${items.length} action items from Gemini`);
+          return items;
+        } catch (e) {
+          logger.error('Failed to parse Gemini action items JSON:', e);
+          logger.error('Raw content:', jsonMatch[0]);
           return [];
         }
+      } else {
+        logger.warn('No JSON array found in Gemini response');
+        return [];
       }
     } catch (error) {
       logger.error('Gemini action item extraction failed:', error);
     }
   }
 
-  // Fallback
-  logger.warn('No AI service available, using mock action items');
+  // Fallback - try to extract basic action items from transcript
+  logger.warn('No AI service available, attempting basic extraction');
+
+  const actionPhrases = [
+    'will',
+    'need to',
+    'should',
+    'must',
+    'have to',
+    'going to',
+    'action item',
+    'next step',
+    'follow up',
+    'todo',
+    'task',
+  ];
+
+  const lines = transcript.split(/[.!?]+/);
+  const potentialActions: any[] = [];
+
+  lines.forEach((line, index) => {
+    const lowerLine = line.toLowerCase();
+    if (actionPhrases.some((phrase) => lowerLine.includes(phrase))) {
+      potentialActions.push({
+        id: String(index + 1),
+        text: line.trim(),
+        assignee: null,
+        priority: 'medium',
+      });
+    }
+  });
+
+  // If we found some action items, return them, otherwise return mock
+  if (potentialActions.length > 0) {
+    logger.info(`Extracted ${potentialActions.length} potential action items from transcript`);
+    return potentialActions.slice(0, 5); // Limit to 5 items
+  }
+
   return getMockActionItems();
 }
 

@@ -17,7 +17,7 @@ import {
   ListChecks,
   BookOpen,
   CheckCircle2,
-  Clock
+  Clock,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -88,6 +88,55 @@ export const MeetingDetail = () => {
     }
   };
 
+  const handleExportTranscript = () => {
+    if (!transcript || !meeting) return;
+
+    // Create file content with meeting details and transcript
+    const content = `Meeting: ${meeting.title}
+Date: ${format(new Date(meeting.createdAt), 'PPP')} at ${format(new Date(meeting.createdAt), 'p')}
+${meeting.description ? `Description: ${meeting.description}\n` : ''}
+${'='.repeat(80)}
+
+TRANSCRIPT
+${'='.repeat(80)}
+
+${transcript.content}
+
+${'='.repeat(80)}
+
+SUMMARY
+${'='.repeat(80)}
+
+${transcript.summary || 'No summary available'}
+
+${'='.repeat(80)}
+
+ACTION ITEMS
+${'='.repeat(80)}
+
+${
+  transcript.actionItems && (transcript.actionItems as ActionItem[]).length > 0
+    ? (transcript.actionItems as ActionItem[])
+        .map(
+          (item, index) =>
+            `${index + 1}. ${item.text}${item.assignee ? ` (Assigned to: ${item.assignee})` : ''}${item.priority ? ` [Priority: ${item.priority}]` : ''}`
+        )
+        .join('\n')
+    : 'No action items'
+}`;
+
+    // Create blob and download
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${meeting.title.replace(/[^a-z0-9]/gi, '_')}_transcript_${format(new Date(), 'yyyy-MM-dd')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   const getStatusMessage = () => {
     if (!meeting) return '';
 
@@ -131,24 +180,12 @@ export const MeetingDetail = () => {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/dashboard')}
-        >
+        <Button variant="ghost" onClick={() => navigate('/dashboard')}>
           <ChevronLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          {deleting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
+        <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+          {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
         </Button>
       </div>
 
@@ -159,12 +196,11 @@ export const MeetingDetail = () => {
             <div>
               <CardTitle className="text-2xl">{meeting.title}</CardTitle>
               <CardDescription className="mt-2">
-                {format(new Date(meeting.createdAt), 'PPP')} at {format(new Date(meeting.createdAt), 'p')}
+                {format(new Date(meeting.createdAt), 'PPP')} at{' '}
+                {format(new Date(meeting.createdAt), 'p')}
               </CardDescription>
             </div>
-            <Badge
-              variant={meeting.status === 'completed' ? 'default' : 'secondary'}
-            >
+            <Badge variant={meeting.status === 'completed' ? 'default' : 'secondary'}>
               {meeting.status}
             </Badge>
           </div>
@@ -210,7 +246,9 @@ export const MeetingDetail = () => {
                 <CardTitle>Meeting Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap">{transcript.summary || 'No summary available'}</p>
+                <p className="whitespace-pre-wrap">
+                  {transcript.summary || 'No summary available'}
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -220,9 +258,9 @@ export const MeetingDetail = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Full Transcript</CardTitle>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleExportTranscript}>
                     <Download className="h-4 w-4 mr-2" />
-                    Export
+                    Export as Text
                   </Button>
                 </div>
               </CardHeader>
@@ -243,7 +281,10 @@ export const MeetingDetail = () => {
                 {transcript.actionItems && (transcript.actionItems as ActionItem[]).length > 0 ? (
                   <div className="space-y-3">
                     {(transcript.actionItems as ActionItem[]).map((item, index) => (
-                      <div key={item.id || index} className="flex items-start space-x-3 p-3 bg-accent/50 rounded-lg">
+                      <div
+                        key={item.id || index}
+                        className="flex items-start space-x-3 p-3 bg-accent/50 rounded-lg"
+                      >
                         <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">{item.text}</p>
@@ -254,11 +295,15 @@ export const MeetingDetail = () => {
                           )}
                         </div>
                         {item.priority && (
-                          <Badge variant={
-                            item.priority === 'high' ? 'destructive' :
-                            item.priority === 'medium' ? 'default' :
-                            'secondary'
-                          }>
+                          <Badge
+                            variant={
+                              item.priority === 'high'
+                                ? 'destructive'
+                                : item.priority === 'medium'
+                                  ? 'default'
+                                  : 'secondary'
+                            }
+                          >
                             {item.priority}
                           </Badge>
                         )}
@@ -275,7 +320,9 @@ export const MeetingDetail = () => {
       ) : meeting.status === 'failed' ? (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-destructive mb-4">Processing failed. Please try uploading the audio again.</p>
+            <p className="text-destructive mb-4">
+              Processing failed. Please try uploading the audio again.
+            </p>
             <Button onClick={() => navigate('/meetings/new')}>Create New Meeting</Button>
           </CardContent>
         </Card>

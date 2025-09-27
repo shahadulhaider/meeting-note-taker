@@ -1,184 +1,249 @@
-# Meeting Note Taker
+# Meeting Note Taker - Fireflies.ai Clone
 
-A modern meeting transcription and analysis application that provides automatic transcription, AI-powered summarization, and action item extraction from audio recordings.
+A simplified replica of Fireflies.ai that provides meeting transcription, summarization, and action item extraction from audio recordings.
 
-## 🚀 Quick Start
+## 🚀 Features
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/meeting-note-taker.git
-cd meeting-note-taker
+- **Google OAuth Authentication** - Secure login with Google accounts
+- **Audio Upload & Processing** - Upload meeting recordings for automatic processing
+- **AI-Powered Transcription** - Convert audio to text using OpenAI Whisper or Google Gemini
+- **Smart Summarization** - Generate concise meeting summaries using AI
+- **Action Items Extraction** - Automatically identify and extract action items from meetings
+- **Real-time Updates** - WebSocket-based progress tracking during processing
+- **Export Functionality** - Download transcripts as text files
 
-# Install dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env
-# Edit .env with your Supabase and AI API credentials
-
-# Start Docker services (Redis for local development)
-docker-compose up -d
-
-# Run development servers
-npm run dev
-
-# Access the application
-# Frontend: http://localhost:5173
-# Backend API: http://localhost:3001
-# Bull Dashboard: http://localhost:3001/admin/queues
-```
-
-## 🎯 Features
-
-- **Google OAuth Authentication** - Secure login via Supabase
-- **Audio Upload** - Support for MP3, WAV, and WebM formats
-- **Automatic Transcription** - Using OpenAI Whisper or Google Gemini
-- **AI-Powered Summary** - Intelligent meeting summaries
-- **Action Items Extraction** - Automatic identification of tasks
-- **Real-time Processing Updates** - WebSocket-based progress tracking
-- **Meeting Management** - Create, view, and manage all your meetings
-
-## 🏗️ Tech Stack
+## 🛠 Tech Stack
 
 ### Frontend
 - React 18 with TypeScript
-- Vite for blazing fast builds
-- TailwindCSS + Shadcn UI for beautiful components
-- Zustand for state management
+- Vite for fast development
+- Tailwind CSS for styling
+- Shadcn UI components
 - React Query for data fetching
 - Socket.io client for real-time updates
+- React Router for navigation
 
 ### Backend
 - Express.js with TypeScript
 - BullMQ for job queue management
-- Redis for queue storage
 - Socket.io for WebSocket connections
 - Drizzle ORM for database operations
-- Zod for validation
+- OpenAI API for transcription
+- Google Gemini API as fallback
 
 ### Infrastructure
-- Supabase for Authentication, Database, and Storage
-- Docker for containerization
-- Railway for backend deployment
-- Vercel for frontend deployment
+- Supabase for authentication, database (PostgreSQL), and file storage
+- Redis for job queue (via Docker locally)
+- Turborepo for monorepo management
+- pnpm for package management
 
-## 📁 Project Structure
+## 📋 Prerequisites
+
+- Node.js 18+ 
+- pnpm 8+
+- Docker and Docker Compose
+- Supabase account
+- OpenAI API key
+- Google AI API key
+
+## 🔧 Setup Instructions
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd meeting-note-taker
+```
+
+### 2. Install Dependencies
+
+```bash
+pnpm install
+```
+
+### 3. Environment Configuration
+
+#### Backend (.env file in apps/api/)
+```env
+# Server
+PORT=3001
+NODE_ENV=development
+
+# Database (Supabase)
+DATABASE_URL="postgresql://[user]:[password]@[host]:5432/postgres"
+
+# Supabase
+SUPABASE_URL="https://[project-id].supabase.co"
+SUPABASE_ANON_KEY="your-anon-key"
+SUPABASE_SERVICE_KEY="your-service-key"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
+
+# CORS
+CORS_ORIGIN="http://localhost:5173"
+
+# AI Services
+OPENAI_API_KEY="your-openai-key"
+GOOGLE_AI_KEY="your-gemini-key"
+```
+
+#### Frontend (.env file in apps/web/)
+```env
+VITE_API_URL=http://localhost:3001
+VITE_SUPABASE_URL="https://[project-id].supabase.co"
+VITE_SUPABASE_ANON_KEY="your-anon-key"
+```
+
+### 4. Database Setup
+
+#### Run Migrations
+```bash
+cd apps/api
+pnpm db:generate
+pnpm db:migrate
+```
+
+### 5. Supabase Configuration
+
+1. Create a new Supabase project
+2. Enable Google OAuth in Authentication settings
+3. Create a storage bucket named `meeting-records`
+4. Set the bucket to private (authenticated access only)
+
+### 6. Start Services
+
+#### Start Redis (using Docker)
+```bash
+docker-compose up -d
+```
+
+#### Start Development Servers
+```bash
+# From root directory
+pnpm dev
+
+# Or start individually:
+# Backend
+pnpm --filter api dev
+
+# Frontend  
+pnpm --filter web dev
+```
+
+## 🌐 Accessing the Application
+
+- Frontend: http://localhost:5173 (or http://localhost:5174)
+- Backend API: http://localhost:3001
+- Redis: localhost:6379
+
+## 📦 Deployment
+
+### Backend Deployment (Railway)
+
+1. Create a Railway project
+2. Add Redis service
+3. Deploy using Docker:
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY . .
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter api build
+CMD ["pnpm", "--filter", "api", "start"]
+```
+4. Set environment variables in Railway dashboard
+
+### Frontend Deployment (Vercel)
+
+1. Connect GitHub repository to Vercel
+2. Configure build settings:
+   - Build Command: `pnpm --filter web build`
+   - Output Directory: `apps/web/dist`
+3. Add environment variables in Vercel dashboard
+
+## 🏗 Architecture Overview
 
 ```
 meeting-note-taker/
 ├── apps/
-│   ├── web/          # Frontend application
-│   └── api/          # Backend API server
+│   ├── api/          # Express backend
+│   │   ├── src/
+│   │   │   ├── routes/     # API endpoints
+│   │   │   ├── services/   # Business logic
+│   │   │   ├── workers/    # Background jobs
+│   │   │   └── db/         # Database schema
+│   │   └── package.json
+│   │
+│   └── web/          # React frontend
+│       ├── src/
+│       │   ├── pages/      # Route pages
+│       │   ├── components/ # UI components
+│       │   ├── services/   # API client
+│       │   └── hooks/      # Custom hooks
+│       └── package.json
+│
 ├── packages/
-│   └── shared/       # Shared types and utilities
-├── docker-compose.yml
-└── turbo.json
+│   └── shared/       # Shared types
+│
+└── docker-compose.yml
 ```
 
-## 🔧 Environment Variables
+## 🔄 Processing Flow
 
-Create `.env` files in both `apps/web` and `apps/api`:
+1. User uploads audio file via web interface
+2. File is stored in Supabase Storage
+3. Backend creates a BullMQ job for processing
+4. Worker processes the audio:
+   - Downloads from Supabase
+   - Transcribes using OpenAI Whisper
+   - Falls back to Gemini if Whisper fails
+   - Generates summary using AI
+   - Extracts action items
+5. Real-time updates sent via WebSocket
+6. Results stored in PostgreSQL database
+7. UI updates to show completed transcription
 
-### Backend (apps/api/.env)
-```env
-NODE_ENV=development
-PORT=3001
-DATABASE_URL=postgresql://...
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_KEY=xxx
-REDIS_URL=redis://localhost:6379
-OPENAI_API_KEY=xxx
-FRONTEND_URL=http://localhost:5173
-```
+## 🧪 Testing the Application
 
-### Frontend (apps/web/.env)
-```env
-VITE_API_URL=http://localhost:3001
-VITE_WS_URL=ws://localhost:3001
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=xxx
-```
+1. Sign in with Google OAuth
+2. Click "New Meeting" 
+3. Enter meeting details
+4. Upload an audio file (MP3, WAV, M4A)
+5. Watch real-time processing progress
+6. View transcript, summary, and action items
+7. Export transcript as text file
 
-## 📝 API Documentation
+## 📝 API Endpoints
 
-### Authentication
-- `POST /api/auth/login` - Login with Google
-- `POST /api/auth/logout` - Logout user
-- `GET /api/auth/me` - Get current user
-
-### Meetings
-- `GET /api/meetings` - List all meetings
+- `POST /api/auth/login` - Google OAuth login
+- `GET /api/meetings` - List user meetings  
 - `POST /api/meetings` - Create new meeting
-- `GET /api/meetings/:id` - Get meeting details
 - `POST /api/meetings/:id/upload` - Upload audio file
+- `GET /api/meetings/:id` - Get meeting details
 - `DELETE /api/meetings/:id` - Delete meeting
 
-### WebSocket Events
-- `connection` - Initial connection
-- `subscribe-meeting` - Subscribe to meeting updates
-- `job-update` - Processing status updates
+## 🐛 Troubleshooting
 
-## 🚢 Deployment
+### Common Issues
 
-### Backend (Railway)
-1. Push to GitHub
-2. Connect Railway to your repository
-3. Add Redis database
-4. Configure environment variables
-5. Deploy using Dockerfile
+1. **CORS Errors**: Ensure frontend URL is in CORS whitelist
+2. **Database Connection**: Check DATABASE_URL format (use pooler URL)
+3. **Audio Upload Fails**: Verify Supabase storage bucket permissions
+4. **No Action Items**: Check AI API keys are correctly set
+5. **Port Already in Use**: Kill existing processes or change ports
 
-### Frontend (Vercel)
-1. Import GitHub repository
-2. Configure build settings for Vite
-3. Add environment variables
-4. Deploy
+### Logs
 
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm run test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run E2E tests
-npm run test:e2e
-```
-
-## 📊 Performance
-
-- Maximum file size: 100MB
-- Concurrent processing: 2 jobs
-- Supported formats: MP3, WAV, WebM
-- Processing time: ~2-5 minutes per 30-minute audio
-
-## 🔒 Security
-
-- Google OAuth for authentication
-- Supabase Row Level Security
-- File type validation
-- Rate limiting on API endpoints
-- Secure environment variables
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
+- Backend logs: Check terminal running `pnpm --filter api dev`
+- Worker logs: Look for BullMQ job processing messages
+- Frontend console: Browser developer tools
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+MIT
 
-## 🙏 Acknowledgments
+## 👥 Author
 
-- Built with [Supabase](https://supabase.com)
-- UI components from [Shadcn UI](https://ui.shadcn.com)
-- Deployed on [Railway](https://railway.app) and [Vercel](https://vercel.com)
-
-## 📧 Contact
-
-For questions or feedback, please open an issue on GitHub.
+Created as a technical assessment project demonstrating full-stack development capabilities with modern web technologies.

@@ -51,7 +51,7 @@ A simplified replica of Fireflies.ai that provides meeting transcription, summar
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:shahadulhaider/meeting-note-taker.git
 cd meeting-note-taker
 ```
 
@@ -243,7 +243,3 @@ meeting-note-taker/
 ## 📄 License
 
 MIT
-
-## 👥 Author
-
-Created as a technical assessment project demonstrating full-stack development capabilities with modern web technologies.

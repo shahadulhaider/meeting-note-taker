@@ -11,7 +11,7 @@ git add .
 git commit -m "Initial commit: Meeting Note Taker - Fireflies.ai Clone"
 
 # Create a new repository on GitHub and push
-git remote add origin https://github.com/shahadulhaider/meeting-note-taker.git
+git remote add origin git@github.com:shahadulhaider/meeting-note-taker.git
 git branch -M main
 git push -u origin main
 ```

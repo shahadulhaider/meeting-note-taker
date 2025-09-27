@@ -410,7 +410,7 @@ job-update                   // Processing status updates
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/meeting-note-taker.git
+git clone git@github.com:shahadulhaider/meeting-note-taker.git
 cd meeting-note-taker
 
 # Install dependencies

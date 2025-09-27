@@ -2,7 +2,6 @@ import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config';
 import { logger } from '../utils/logger';
-
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -51,7 +50,13 @@ async function transcribeWithWhisper(audioUrl: string, fileName: string): Promis
   try {
     // Download file
     const response = await fetch(audioUrl);
-    const buffer = await response.buffer();
+    if (!response.ok) {
+      throw new Error(`Failed to download audio: ${response.statusText}`);
+    }
+
+    // Convert response to buffer (fetch doesn't have .buffer() method)
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     await fs.writeFile(tempPath, buffer);
 
     // Create a ReadStream for OpenAI
@@ -64,14 +69,22 @@ async function transcribeWithWhisper(audioUrl: string, fileName: string): Promis
       language: 'en',
     });
 
-    return transcription.text;
-  } finally {
-    // Clean up temp file
+    // Clean up temp file after successful transcription
     try {
       await fs.unlink(tempPath);
     } catch (error) {
       logger.error('Failed to delete temp file:', error);
     }
+
+    return transcription.text;
+  } catch (error) {
+    // Clean up temp file on error
+    try {
+      await fs.unlink(tempPath);
+    } catch (cleanupError) {
+      // File might not exist, ignore
+    }
+    throw error;
   }
 }
 
@@ -82,7 +95,7 @@ async function transcribeWithGemini(audioUrl: string, fileName: string): Promise
   // We'll use it to process audio with a prompt
   // For actual implementation, you might want to use Google Speech-to-Text API
 
-  const model = geminiClient!.getGenerativeModel({ model: 'gemini-pro' });
+  const model = geminiClient!.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
   // This is a simplified approach - in production, you'd use Google Speech-to-Text
   const prompt = `This is an audio file from a meeting. Please provide a mock transcript for testing purposes.

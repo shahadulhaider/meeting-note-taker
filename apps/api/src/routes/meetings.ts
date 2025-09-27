@@ -35,12 +35,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
     const [meeting] = await db
       .select()
       .from(meetings)
-      .where(
-        and(
-          eq(meetings.id, meetingId),
-          eq(meetings.userId, req.user!.id)
-        )
-      );
+      .where(and(eq(meetings.id, meetingId), eq(meetings.userId, req.user!.id)));
 
     if (!meeting) {
       throw new AppError('Meeting not found', 404);
@@ -96,12 +91,7 @@ router.post(
       const [meeting] = await db
         .select()
         .from(meetings)
-        .where(
-          and(
-            eq(meetings.id, meetingId),
-            eq(meetings.userId, req.user!.id)
-          )
-        );
+        .where(and(eq(meetings.id, meetingId), eq(meetings.userId, req.user!.id)));
 
       if (!meeting) {
         throw new AppError('Meeting not found', 404);
@@ -124,10 +114,20 @@ router.post(
         throw new AppError('Failed to upload audio file', 500);
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabaseAdmin.storage
+      // Create signed URL for downloading (valid for 1 hour)
+      const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
         .from(config.storage.bucketName)
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
+
+      if (signedUrlError || !signedUrlData) {
+        logger.error('Failed to create signed URL:', signedUrlError);
+        throw new AppError('Failed to create download URL', 500);
+      }
+
+      // Get public URL for storage (to save in DB)
+      const {
+        data: { publicUrl },
+      } = supabaseAdmin.storage.from(config.storage.bucketName).getPublicUrl(fileName);
 
       // Update meeting with audio URL
       await db
@@ -139,11 +139,11 @@ router.post(
         })
         .where(eq(meetings.id, meetingId));
 
-      // Add job to queue
+      // Add job to queue with signed URL for processing
       const job = await audioQueue.add('process-audio', {
         meetingId,
         userId: req.user!.id,
-        audioUrl: publicUrl,
+        audioUrl: signedUrlData.signedUrl,
         fileName: file.originalname,
       });
 
@@ -175,12 +175,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
     const [meeting] = await db
       .select()
       .from(meetings)
-      .where(
-        and(
-          eq(meetings.id, meetingId),
-          eq(meetings.userId, req.user!.id)
-        )
-      );
+      .where(and(eq(meetings.id, meetingId), eq(meetings.userId, req.user!.id)));
 
     if (!meeting) {
       throw new AppError('Meeting not found', 404);
@@ -189,9 +184,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
     // Delete from storage if exists
     if (meeting.audioUrl) {
       const fileName = meeting.audioUrl.split('/').slice(-2).join('/');
-      await supabaseAdmin.storage
-        .from(config.storage.bucketName)
-        .remove([fileName]);
+      await supabaseAdmin.storage.from(config.storage.bucketName).remove([fileName]);
     }
 
     // Delete from database (cascade will handle transcript)

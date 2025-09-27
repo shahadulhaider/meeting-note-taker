@@ -32,8 +32,11 @@ export async function generateSummary(transcript: string): Promise<string> {
       const response = await openaiClient.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
-          { role: 'system', content: 'You are a helpful assistant that summarizes meeting transcripts.' },
-          { role: 'user', content: prompt }
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that summarizes meeting transcripts.',
+          },
+          { role: 'user', content: prompt },
         ],
         max_tokens: 500,
         temperature: 0.7,
@@ -49,7 +52,7 @@ export async function generateSummary(transcript: string): Promise<string> {
   if (geminiClient && config.ai.googleAiKey) {
     try {
       logger.info('Generating summary with Gemini');
-      const model = geminiClient.getGenerativeModel({ model: 'gemini-pro' });
+      const model = geminiClient.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text();
@@ -80,8 +83,12 @@ export async function extractActionItems(transcript: string): Promise<any[]> {
       const response = await openaiClient.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
-          { role: 'system', content: 'You are a helpful assistant that extracts action items from meeting transcripts. Always return valid JSON.' },
-          { role: 'user', content: prompt }
+          {
+            role: 'system',
+            content:
+              'You are a helpful assistant that extracts action items from meeting transcripts. Always return valid JSON.',
+          },
+          { role: 'user', content: prompt },
         ],
         max_tokens: 500,
         temperature: 0.3,
@@ -102,7 +109,7 @@ export async function extractActionItems(transcript: string): Promise<any[]> {
   if (geminiClient && config.ai.googleAiKey) {
     try {
       logger.info('Extracting action items with Gemini');
-      const model = geminiClient.getGenerativeModel({ model: 'gemini-pro' });
+      const model = geminiClient.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
@@ -136,31 +143,31 @@ function getMockActionItems(): any[] {
       id: '1',
       text: 'Implement Redis caching for user sessions',
       assignee: 'Speaker 2',
-      priority: 'high'
+      priority: 'high',
     },
     {
       id: '2',
       text: 'Complete frontend UI components and dashboard layout',
       assignee: 'Speaker 3',
-      priority: 'high'
+      priority: 'high',
     },
     {
       id: '3',
       text: 'Connect frontend to backend API',
       assignee: 'Speaker 3',
-      priority: 'medium'
+      priority: 'medium',
     },
     {
       id: '4',
       text: 'Prepare deployment pipeline',
       assignee: 'Speaker 1',
-      priority: 'medium'
+      priority: 'medium',
     },
     {
       id: '5',
       text: 'Prepare demo for Friday presentation',
       assignee: 'Team',
-      priority: 'high'
-    }
+      priority: 'high',
+    },
   ];
 }

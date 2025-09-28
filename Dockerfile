@@ -17,8 +17,7 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application (shared doesn't need build, just API)
-RUN pnpm --filter @meeting-note-taker/api build
+# Build the applicationRUN pnpm --filter @meeting-note-taker/api build
 
 # Production stage
 FROM node:18-alpine
@@ -28,12 +27,16 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/
+
 # Copy built application
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+
+# Copy shared source (no build needed, just TypeScript types)
+COPY --from=builder /app/packages/shared/src ./packages/shared/src
 
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile

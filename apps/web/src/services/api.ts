@@ -1,35 +1,67 @@
 import { supabase } from '@/lib/supabase';
 import { Meeting, Transcript, CreateMeetingInput } from '@meeting-note-taker/shared';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Raw base URL from build-time environment
+const rawBase = import.meta.env.VITE_API_URL;
+
+if (!rawBase) {
+  throw new Error(
+    '[ApiService] VITE_API_URL is not defined. Set it in your environment (e.g. Vercel project settings).'
+  );
+}
+
+// Normalize: remove trailing slashes
+const API_BASE = rawBase.replace(/\/+$/, '');
+
+// Expose for debugging in dev
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line no-console
+  console.log('[ApiService] Using API_BASE =', API_BASE);
+  (window as any).__API_BASE__ = API_BASE;
+}
 
 class ApiService {
   private async getAuthToken() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) {
       throw new Error('Not authenticated');
     }
     return session.access_token;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = await this.getAuthToken();
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    // Ensure exactly one leading slash
+    const normalizedEndpoint = '/' + endpoint.replace(/^\/+/, '');
+    const url = `${API_BASE}${normalizedEndpoint}`;
+
+    const isFormData = options.body instanceof FormData;
+
+    const response = await fetch(url, {
       ...options,
       headers: {
-        ...options.headers,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+        Authorization: `Bearer ${token}`,
+        ...(options.headers || {}),
       },
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(error.error || 'Request failed');
+      let message = `Request failed (${response.status})`;
+      try {
+        const errorBody = await response.json();
+        if (errorBody?.error) message = errorBody.error;
+      } catch {
+        // ignore parse error
+      }
+      throw new Error(message);
+    }
+
+    if (response.status === 204) {
+      return undefined as unknown as T;
     }
 
     return response.json();
@@ -56,17 +88,25 @@ class ApiService {
     const formData = new FormData();
     formData.append('audio', file);
 
-    const response = await fetch(`${API_URL}/api/meetings/${meetingId}/upload`, {
+    const url = `${API_BASE}/api/meetings/${meetingId}/upload`;
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: formData,
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
-      throw new Error(error.error || 'Upload failed');
+      let message = `Upload failed (${response.status})`;
+      try {
+        const errorBody = await response.json();
+        if (errorBody?.error) message = errorBody.error;
+      } catch {
+        // ignore parse error
+      }
+      throw new Error(message);
     }
 
     return response.json();

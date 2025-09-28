@@ -1,9 +1,10 @@
 import { Router } from 'express';
+import type { Router as ExpressRouter } from 'express';
 import { supabaseAdmin } from '../utils/supabase';
 import { logger } from '../utils/logger';
 import { AuthRequest, authenticate } from '../middleware/auth';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // Get current user
 router.get('/me', authenticate, async (req: AuthRequest, res) => {

@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -12,7 +12,7 @@ import { initWorker } from './workers';
 import meetingRoutes from './routes/meetings';
 import authRoutes from './routes/auth';
 
-const app = express();
+const app: Express = express();
 const server = createServer(app);
 
 // Initialize Socket.io

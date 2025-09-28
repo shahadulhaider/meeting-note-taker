@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Router as ExpressRouter } from 'express';
 import { AuthRequest, authenticate } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 import { AppError } from '../middleware/error';
@@ -10,7 +11,7 @@ import { config } from '../config';
 import { logger } from '../utils/logger';
 import { createMeetingSchema } from '@meeting-note-taker/shared';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // Get all meetings for authenticated user
 router.get('/', authenticate, async (req: AuthRequest, res, next) => {

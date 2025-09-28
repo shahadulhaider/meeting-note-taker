@@ -4,7 +4,8 @@
   "private": true,
   "description": "Modern meeting transcription and analysis application",
   "scripts": {
-    "dev": "turbo dev",
+    "predev": "pnpm --filter @meeting-note-taker/shared build",
+    "dev": "sh -c 'pnpm --filter @meeting-note-taker/shared dev & turbo dev'",
     "build": "turbo build",
     "lint": "turbo lint",
     "format": "turbo format",

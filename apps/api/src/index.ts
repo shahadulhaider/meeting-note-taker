@@ -13,6 +13,16 @@ import meetingRoutes from './routes/meetings';
 import authRoutes from './routes/auth';
 
 const app: Express = express();
+
+// Disable ETag generation to avoid 304 Not Modified responses during development and simplify client logic
+app.disable('etag');
+
+// Force no-store so clients always fetch fresh data (can be adjusted later for real caching)
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 const server = createServer(app);
 
 // Initialize Socket.io

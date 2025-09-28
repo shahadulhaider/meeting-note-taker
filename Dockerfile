@@ -17,7 +17,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the applicationRUN pnpm --filter @meeting-note-taker/api build
+# Build the application
+RUN pnpm --filter @meeting-note-taker/api build
 
 # Production stage
 FROM node:18-alpine

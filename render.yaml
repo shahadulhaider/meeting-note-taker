@@ -1,0 +1,40 @@
+services:
+  # Backend API service
+  - type: web
+    name: meeting-note-taker-api
+    runtime: docker
+    repo: https://github.com/shahadulhaider/meeting-note-taker
+    dockerfilePath: ./Dockerfile
+    branch: main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false # Add manually in dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: meeting-redis
+          property: connectionString
+      - key: CORS_ORIGIN
+        sync: false # Will be your Vercel URL
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_AI_KEY
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # Redis service
+  - type: redis
+    name: meeting-redis
+    plan: free # 25 MB free tier
+    maxmemoryPolicy: allkeys-lru

@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -21,7 +21,7 @@ COPY . .
 RUN pnpm --filter @meeting-note-taker/shared build && pnpm --filter @meeting-note-taker/api build
 
 # Production stage
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate

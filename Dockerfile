@@ -17,8 +17,7 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application
-RUN pnpm --filter @meeting-note-taker/shared build
+# Build the application (shared doesn't need build, just API)
 RUN pnpm --filter @meeting-note-taker/api build
 
 # Production stage

@@ -30,19 +30,19 @@ export const jobProgressSchema = z.object({
     'transcribing',
     'summarizing',
     'completed',
-    'failed'
+    'failed',
   ]),
   progress: z.number().min(0).max(100),
   message: z.string().optional(),
-  data: z.object({
-    transcript: z.string().optional(),
-    summary: z.string().optional(),
-    actionItems: z.array(actionItemSchema).optional(),
-  }).optional(),
+  data: z
+    .object({
+      transcript: z.string().optional(),
+      summary: z.string().optional(),
+      actionItems: z.array(actionItemSchema).optional(),
+    })
+    .optional(),
   error: z.string().optional(),
 });
 
 export type CreateMeetingInput = z.infer<typeof createMeetingSchema>;
 export type UploadAudioInput = z.infer<typeof uploadAudioSchema>;
-export type ActionItem = z.infer<typeof actionItemSchema>;
-export type JobProgress = z.infer<typeof jobProgressSchema>;

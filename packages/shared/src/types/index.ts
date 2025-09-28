@@ -15,6 +15,7 @@ export interface Meeting {
   audioUrl?: string;
   status: MeetingStatus;
   jobId?: string;
+  duration?: number; // duration in seconds (optional; may be undefined if not processed)
   createdAt: Date;
   updatedAt: Date;
 }
